@@ -3,6 +3,7 @@ import {Route} from 'react-router-dom'
 import ProtectedRoute from './common/ProtectedRoute'
 import AdminPage from './routes/Admin'
 import AuthPage from './routes/Auth'
+import PeoplePage from './routes/PeoplePage'
 
 class App extends Component {
     static propTypes = {
@@ -15,6 +16,7 @@ class App extends Component {
                 <h1>Hello world</h1>
                 <ProtectedRoute path = '/admin' component = {AdminPage}/>
                 <Route path = '/auth' component = {AuthPage}/>
+                <Route path = '/people' component = {PeoplePage}/>
             </div>
         )
     }
