@@ -4,6 +4,7 @@ import firebase from 'firebase'
 import {createSelector} from 'reselect'
 import {call, put, all, take} from 'redux-saga/effects'
 import history from '../history'
+import {reset} from 'redux-form';
 
 /**
  * Constants
@@ -95,6 +96,8 @@ export function * signUpSaga() {
                 type: SIGN_UP_SUCCESS,
                 payload: {user}
             })
+
+            yield call(() => reset(moduleName))
         } catch (error) {
             yield put({
                 type: SIGN_UP_ERROR,
@@ -118,7 +121,9 @@ export function * signInSaga() {
                 payload: { user }
             })
 
-            history.push('/people')
+            yield call(() => history.push('/people'))
+            yield call(() => reset(moduleName))
+            
         } catch (error) {
             yield put({
                 type: SIGN_IN_ERROR,
