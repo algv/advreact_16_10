@@ -14,7 +14,9 @@ export const SIGN_UP_START = `${prefix}/SIGN_UP_START`
 export const SIGN_UP_SUCCESS = `${prefix}/SIGN_UP_SUCCESS`
 export const SIGN_UP_ERROR = `${prefix}/SIGN_UP_ERROR`
 
+export const SIGN_IN_START = `${prefix}/SIGN_IN_START`
 export const SIGN_IN_SUCCESS = `${prefix}/SIGN_IN_SUCCESS`
+export const SIGN_IN_ERROR = `${prefix}/SIGN_IN_ERROR`
 
 /**
  * Reducer
@@ -26,10 +28,11 @@ export const ReducerRecord = Record({
 })
 
 export default function reducer(state = new ReducerRecord(), action) {
-    const {type, payload} = action
+    const { error, type, payload } = action
 
     switch (type) {
         case SIGN_UP_START:
+        case SIGN_IN_START:
             return state.set('loading', true)
 
         case SIGN_UP_SUCCESS:
@@ -37,6 +40,12 @@ export default function reducer(state = new ReducerRecord(), action) {
             return state
                 .set('user', payload.user)
                 .set('loading', false)
+
+        case SIGN_UP_ERROR:
+        case SIGN_IN_ERROR:
+            return state
+                .set('loading', false)
+                .set('error', error)
 
         default:
             return state
@@ -60,14 +69,12 @@ export function signUp(email, password) {
     }
 }
 
-firebase.auth().onAuthStateChanged(user => {
-    if (!user) return
-
-    window.store.dispatch({
-        type: SIGN_IN_SUCCESS,
-        payload: { user }
-    })
-})
+export function signIn(email, password) {
+    return {
+        type: SIGN_IN_START,
+        payload: { email, password }
+    }
+}
 
 /**
  * Sagas
@@ -96,8 +103,31 @@ export function * signUpSaga() {
     }
 }
 
+export function * signInSaga() {
+    const auth = firebase.auth()
+
+    while (true) {
+        const { payload } = yield take(SIGN_IN_START)
+
+        try {
+            const user = yield call([auth, auth.signInWithEmailAndPassword], payload.email, payload.password)   // https://firebase.google.com/docs/reference/js/firebase.auth.Auth#signInWithEmailAndPassword
+
+            yield put({
+                type: SIGN_IN_SUCCESS,
+                payload: { user }
+            })
+        } catch (error) {
+            yield put({
+                type: SIGN_IN_ERROR,
+                payload: { error }
+            })
+        }
+    }
+}
+
 export function * saga() {
     yield all([
-        signUpSaga()
+        signUpSaga(),
+        signInSaga()
     ])
 }
