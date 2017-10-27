@@ -1,4 +1,4 @@
-import {all, takeEvery, put, call} from 'redux-saga/effects'
+import {all, put, call, takeEvery} from 'redux-saga/effects'
 import {appName} from '../config'
 import {Record, OrderedMap, OrderedSet} from 'immutable'
 import firebase from 'firebase'
@@ -14,6 +14,9 @@ const prefix = `${appName}/${moduleName}`
 export const FETCH_ALL_REQUEST = `${prefix}/FETCH_ALL_REQUEST`
 export const FETCH_ALL_START = `${prefix}/FETCH_ALL_START`
 export const FETCH_ALL_SUCCESS = `${prefix}/FETCH_ALL_SUCCESS`
+export const FETCH_LAZY_REQUEST = `${prefix}/FETCH_LAZY_REQUEST`
+export const FETCH_LAZY_START = `${prefix}/FETCH_LAZY_START`
+export const FETCH_LAZY_SUCCESS = `${prefix}/FETCH_LAZY_SUCCESS`
 
 export const SELECT_EVENT = `${prefix}/SELECT_EVENT`
 
@@ -43,9 +46,11 @@ export default function reducer(state = new ReducerRecord(), action) {
 
     switch (type) {
         case FETCH_ALL_START:
+        case FETCH_LAZY_START:
             return state.set('loading', true)
 
         case FETCH_ALL_SUCCESS:
+        case FETCH_LAZY_SUCCESS:
             return state
                 .set('loading', false)
                 .set('loaded', true)
@@ -83,6 +88,12 @@ export function fetchAllEvents() {
     }
 }
 
+export function fetchLazyEvents() {
+    return {
+        type: FETCH_LAZY_REQUEST
+    }
+}
+
 export function selectEvent(uid) {
     return {
         type: SELECT_EVENT,
@@ -109,16 +120,28 @@ export function* fetchAllSaga() {
     })
 }
 
-//lazy fetch FB
-/*
-firebase.database().ref('events')
-    .orderByKey()
-    .limitToFirst(10)
-    .startAt(lastUid)
+export function* fetchLazySaga() {
+    yield put({
+        type: FETCH_LAZY_START
+    })
 
-*/
+    const lastUid = stateSelector.entities ? stateSelector.entities.last().uid : ''
+
+    const ref = firebase.database().ref('events')
+        .orderByKey()
+        .limitToFirst(10)
+        .startAt(lastUid)
+
+    const snapshot = yield call([ref, ref.once], 'value')
+
+    yield put({
+        type: FETCH_LAZY_SUCCESS,
+        payload: snapshot.val()
+    })
+}
+
 export function* saga() {
     yield all([
-        takeEvery(FETCH_ALL_REQUEST, fetchAllSaga)
+        takeEvery(FETCH_LAZY_REQUEST, fetchLazySaga)
     ])
 }

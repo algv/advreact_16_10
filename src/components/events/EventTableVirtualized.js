@@ -1,48 +1,64 @@
 import React, { Component } from 'react'
-import {Table, Column} from 'react-virtualized'
+import {Table, Column, InfiniteLoader} from 'react-virtualized'
 import {connect} from 'react-redux'
-import {fetchAllEvents, selectEvent, selectedEventsSelector, eventListSelector, loadedSelector, loadingSelector} from '../../ducks/events'
+import {fetchLazyEvents, selectEvent, selectedEventsSelector, eventListSelector, loadedSelector, loadingSelector} from '../../ducks/events'
 import Loader from '../common/Loader'
 import 'react-virtualized/styles.css'
 
 class EventTableVirtualized extends Component {
-    static propTypes = {
-
-    };
     componentDidMount() {
-        this.props.fetchAllEvents()
-        console.log('---', 'load events')
+        this.props.fetchLazyEvents()
     }
 
+    isRowLoaded = ({ index }) => !!this.props.events[index]
+
+    loadMoreRows = () => this.props.fetchLazyEvents()
+      
     render() {
-        if (this.props.loading) return <Loader />
+        const {events, loading, selectEvent} = this.props
+
+        if (loading) return <Loader />
+
+        const remoteRowCount = events.length;
+
         return (
-            <Table
-                height={500}
-                width = {600}
-                rowHeight={40}
-                rowHeaderHeight={40}
-                rowGetter={this.rowGetter}
-                rowCount={this.props.events.length}
-                overscanRowCount={0}
-                onRowClick={({ rowData }) => this.props.selectEvent(rowData.uid)}
+            <InfiniteLoader
+                isRowLoaded={this.isRowLoaded}
+                loadMoreRows={this.loadMoreRows}
+                rowCount={remoteRowCount}
             >
-                <Column
-                    dataKey = 'title'
-                    width={300}
-                    label = 'title'
-                />
-                <Column
-                    dataKey = 'where'
-                    width={200}
-                    label = 'where'
-                />
-                <Column
-                    dataKey = 'when'
-                    width={200}
-                    label = 'when'
-                />
-            </Table>
+                {({ onRowsRendered, registerChild }) => (
+                    <Table
+                        height={400}
+                        width={600}
+                        headerHeight={40}
+                        rowHeight={40}
+                        rowHeaderHeight={40}
+                        rowGetter={this.rowGetter}
+                        rowCount={remoteRowCount}
+                        onRowClick={({ rowData }) => selectEvent(rowData.uid)}
+                        onRowsRendered={onRowsRendered}
+                        ref={registerChild}
+                        overscanRowCount={2}
+                    >
+                        <Column
+                            dataKey='title'
+                            width={300}
+                            label='title'
+                        />
+                        <Column
+                            dataKey='where'
+                            width={200}
+                            label='where'
+                        />
+                        <Column
+                            dataKey='when'
+                            width={200}
+                            label='when'
+                        />
+                    </Table>
+                )}
+            </InfiniteLoader>
         )
     }
 
@@ -54,4 +70,4 @@ export default connect((state, props) => ({
     loading: loadingSelector(state),
     loaded: loadedSelector(state),
     selected: selectedEventsSelector(state)
-}), { fetchAllEvents, selectEvent })(EventTableVirtualized)
+}), { fetchLazyEvents, selectEvent })(EventTableVirtualized)
