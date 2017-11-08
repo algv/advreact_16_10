@@ -1,52 +1,60 @@
 import React, { Component } from 'react'
 import {Table, Column} from 'react-virtualized'
 import {connect} from 'react-redux'
-import {fetchAllEvents, selectEvent, selectedEventsSelector, eventListSelector, loadedSelector, loadingSelector} from '../../ducks/events'
+import {fetchAllEvents, deleteEvent, selectEvent, selectedEventsSelector, eventListSelector, loadedSelector, loadingSelector} from '../../ducks/events'
 import Loader from '../common/Loader'
+import EventsRow from './EventsRow'
 import 'react-virtualized/styles.css'
 
 class EventTableVirtualized extends Component {
-    static propTypes = {
-
-    };
     componentDidMount() {
         this.props.fetchAllEvents()
         console.log('---', 'load events')
     }
 
     render() {
+        const { loaded, events } = this.props
+
         if (this.props.loading) return <Loader />
         return (
             <Table
-                height={500}
-                width = {600}
-                rowHeight={40}
-                rowHeaderHeight={40}
+                rowCount={events.length}
                 rowGetter={this.rowGetter}
-                rowCount={this.props.events.length}
-                overscanRowCount={0}
-                onRowClick={({ rowData }) => this.props.selectEvent(rowData.uid)}
+                rowHeight={40}
+                headerHeight={50}
+                overscanRowCount={5}
+                width={700}
+                height={300}
+                onRowClick={this.handleRowClick}
+                rowRenderer={this.rowRenderer}
             >
                 <Column
-                    dataKey = 'title'
+                    label="title"
+                    dataKey="title"
                     width={300}
-                    label = 'title'
                 />
                 <Column
-                    dataKey = 'where'
-                    width={200}
-                    label = 'where'
+                    label="where"
+                    dataKey="where"
+                    width={250}
                 />
                 <Column
-                    dataKey = 'when'
-                    width={200}
-                    label = 'when'
+                    label="when"
+                    dataKey="month"
+                    width={150}
                 />
             </Table>
         )
     }
 
     rowGetter = ({ index }) => this.props.events[index]
+    rowRenderer = (props) => <EventsRow {...props} deleteEvent={(uid) => this.handleDelete(uid)}/>
+
+    handleDelete = (uid) => {
+        const {deleteEvent} = this.props
+        
+        deleteEvent(uid)
+    }
 }
 
 export default connect((state, props) => ({
@@ -54,4 +62,4 @@ export default connect((state, props) => ({
     loading: loadingSelector(state),
     loaded: loadedSelector(state),
     selected: selectedEventsSelector(state)
-}), { fetchAllEvents, selectEvent })(EventTableVirtualized)
+}), { fetchAllEvents, selectEvent, deleteEvent })(EventTableVirtualized)

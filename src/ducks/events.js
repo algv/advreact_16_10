@@ -19,6 +19,7 @@ export const FETCH_LAZY_START = `${prefix}/FETCH_LAZY_START`
 export const FETCH_LAZY_SUCCESS = `${prefix}/FETCH_LAZY_SUCCESS`
 
 export const SELECT_EVENT = `${prefix}/SELECT_EVENT`
+export const DELETE_EVENT = `${prefix}/SELECT_EVENT`
 
 
 /**
@@ -64,6 +65,9 @@ export default function reducer(state = new ReducerRecord(), action) {
         case SELECT_EVENT:
             return state.update('selected', selected => selected.add(payload.uid))
 
+        case DELETE_EVENT:
+            return state.deleteIn(['entities', payload.uid])
+
         default:
             return state
     }
@@ -96,6 +100,13 @@ export function fetchAllEvents() {
 export function selectEvent(uid) {
     return {
         type: SELECT_EVENT,
+        payload: { uid }
+    }
+}
+
+export function deleteEvent(uid) {
+    return {
+        type: DELETE_EVENT,
         payload: { uid }
     }
 }
