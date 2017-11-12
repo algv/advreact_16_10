@@ -6,6 +6,7 @@ import {delay, eventChannel} from 'redux-saga'
 import firebase from 'firebase'
 import {createSelector} from 'reselect'
 import {fbToEntities} from './utils'
+import {LOCATION_CHANGE} from 'react-router-redux'
 
 /**
  * Constants
@@ -193,11 +194,19 @@ export const realtimePeopleSyncSaga = function * () {
     }
 }
 
+export const cancelRealtimePeopleSyncSaga = function * (action) {
+    if (action && action.payload && action.payload.pathname !== '/people') {
+        const watcher = yield fork(realtimePeopleSyncSaga);
+        yield cancel(watcher);
+    }
+}
+
 export function * saga() {
     yield spawn(realtimePeopleSyncSaga)
 
     yield all([
         takeEvery(ADD_PERSON_REQUEST, addPersonSaga),
-        takeEvery(ADD_EVENT_REQUEST, addEventToPersonSaga)
+        takeEvery(ADD_EVENT_REQUEST, addEventToPersonSaga),
+        takeEvery(LOCATION_CHANGE, cancelRealtimePeopleSyncSaga)
     ])
 }
